@@ -154,6 +154,19 @@ pipeline{
             }
         }
 
+        stage('Trigger CD Pipeline'){
+                steps{
+                    script{
+                        env.FAILED_STAGE = "Trigger CD Pipeline"
+                    }
+                    build job: 'Deploy-pipeline',
+                    wait: false,
+                    parameters:[
+                    string(name: 'Image_Tag', value: "${BUILD_NUMBER}")
+                ]
+               }
+            }
+
     }
 
     post {
