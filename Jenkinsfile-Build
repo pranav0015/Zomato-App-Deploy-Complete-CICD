@@ -133,8 +133,8 @@ pipeline{
                 }
                 withCredentials([string(credentialsId: 'iam-access-key', variable: 'ACCESS_KEY'), string(credentialsId: 'iam-secret-key', variable: 'SECRET_KEY')]) {
                sh """
-                docker push ${params.ZOMATO_ECR_REPO}:latest ${params.AWS_ACC_ID}.dkr.ecr.ap-south-1.amazonaws.com/${params.ZOMATO_ECR_REPO}:$BUILD_NUMBER
-                docker push ${params.ZOMATO_ECR_REPO}:latest ${params.AWS_ACC_ID}.dkr.ecr.ap-south-1.amazonaws.com/${params.ZOMATO_ECR_REPO}:latest
+                docker push ${params.AWS_ACC_ID}.dkr.ecr.ap-south-1.amazonaws.com/${params.ZOMATO_ECR_REPO}:$BUILD_NUMBER
+                docker push ${params.AWS_ACC_ID}.dkr.ecr.ap-south-1.amazonaws.com/${params.ZOMATO_ECR_REPO}:latest
                 """
                 }
             }
