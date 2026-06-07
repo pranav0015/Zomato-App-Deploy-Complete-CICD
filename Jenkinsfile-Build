@@ -1,0 +1,317 @@
+pipeline{
+    agent any
+
+    tools{
+        jdk 'jdk'
+        nodejs 'nodejs'
+    }
+    
+    environment{
+        SCANNER_HOME = tools 'sonar-scanner'
+    }
+
+    parameters{
+        string(name: 'ZOMATO_ECR_REPO', defaultValue: 'zomato-ecr-image', description: "Enter the ECR Repo Name")
+        string(name: 'AWS_ACC_ID', defaultValue: '', description: 'Enter your AWS Account ID')
+    }
+
+    stages(){
+        stage("Clean Workspace"){
+            steps{
+                cleanWs()
+            }
+        }
+
+        stage("Git checkout"){
+            steps{
+                git branch: 'main', credentialsId: 'github-token', url: 'https://github.com/pranav0015/Zomato-App-Deploy-Complete-CICD.git'
+            }
+        }
+
+        stage("NPM Install"){
+            steps{
+                script{
+                    env.FAILED_STAGE = "NPM Install"
+                }
+                sh "npm install"
+            }
+        }
+
+        stage('OWASP FS SCAN') {
+                steps {
+                    script{
+                        env.FAILED_STAGE = "OWASP FS SCAN"
+                    }
+                    dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit --nvdApiKey F31F5B04-6962-F111-836C-0EBF96DE670D', odcInstallation: 'dependency-check' // DC is tools name for dependency check in Jenkins Tools. and created nvdApiKey from online.
+                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                 }
+            }
+
+        stage("Trivy File Scan"){
+            steps{
+                script{
+                    env.FAILED_STAGE = "Trivy File Scan"
+                }
+                sh "trivy fs --format table -o trivy-fs-report.html"
+            }
+        }
+
+        stage("SonarQube Scanning"){
+            steps{
+                script{
+                    env.FAILED_STAGE = "SonarQube Scanning"
+                }
+                withSonarQubeEnv('sonar-server') {
+                    sh """
+                        $SONAR_HOME/bin/sonar-scanner \ 
+                        -Dsonar.projectName=zomato-app \
+                        -Dsonar.projectKey=zomato-app
+                    """
+                }
+            }
+        }
+
+        stage("SonarQube Quality Gate"){
+            steps{
+                script{
+                    env.FAILED_STAGE = "SonarQube Quality Gate"
+                }
+                waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
+            }
+        }
+
+        stage("Build Docker Image"){
+            steps{
+                script{
+                    env.FAILED_STAGE = "Build Docker Image"
+                }
+                sh "docker build -t ${params.ZOMATO_ECR_REPO} . "
+            }
+        }
+
+        stage("Trivy Docker Image Scan"){
+            steps{
+                script{
+                    env.FAILED_STAGE = "Trivy Docker Image Scan"
+                }
+                sh "trivy image --format table -o trivy-docker-image-report.html ${params.ZOMATO_ECR_REPO}" 
+            }
+        }
+
+        stage("Create ECR Repo"){
+            steps{
+                script{
+                    env.FAILED_STAGE = "Create ECR Repo"
+                }
+                withCredentials([string(credentialsId: 'iam-access-key', variable: 'ACCESS_KEY'), string(credentialsId: 'iam-secret-key', variable: 'SECRET_KEY')]) {
+                    sh """
+                        aws configure set aws_access_key_id $ACCESS_KEY
+                        aws configure set aws_secret_access_key  $SECRET_KEY
+
+                        aws ecr describe-repositories --repository-name ${params.ZOMATO_ECR_REPO} --region ap-south-1 || 
+                        aws ecr create-repository --repository-name ${params.ZOMATO_ECR_REPO} --region ap-south-1
+                    """
+                }
+            }
+        }
+
+        stage("Logging to ECR and Tagging the Image"){
+            steps{
+                script{
+                    env.FAILED_STAGE = "Logging to ECR and Tagging the Image"
+                }
+                withCredentials([string(credentialsId: 'iam-access-key', variable: 'ACCESS_KEY'), string(credentialsId: 'iam-secret-key', variable: 'SECRET_KEY')]) {
+                    sh """
+                       aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${params.AWS_ACC_ID}.dkr.ecr.ap-south-1.amazonaws.com
+                       docker tag ${params.ZOMATO_ECR_REPO}:latest ${params.AWS_ACC_ID}.dkr.ecr.ap-south-1.amazonaws.com/${params.ZOMATO_ECR_REPO}:$BUILD_NUMBER
+                       docker tag ${params.ZOMATO_ECR_REPO}:latest ${params.AWS_ACC_ID}.dkr.ecr.ap-south-1.amazonaws.com/${params.ZOMATO_ECR_REPO}:latest
+                    """
+                }
+            }
+        }
+
+        stage("Push Docker Image to ECR"){
+            steps{
+                script{
+                    env.FAILED_STAGE = "Push Docker Image to ECR"
+                }
+                withCredentials([string(credentialsId: 'iam-access-key', variable: 'ACCESS_KEY'), string(credentialsId: 'iam-secret-key', variable: 'SECRET_KEY')]) {
+               sh """
+                docker push ${params.ZOMATO_ECR_REPO}:latest ${params.AWS_ACC_ID}.dkr.ecr.ap-south-1.amazonaws.com/${params.ZOMATO_ECR_REPO}:$BUILD_NUMBER
+                docker push ${params.ZOMATO_ECR_REPO}:latest ${params.AWS_ACC_ID}.dkr.ecr.ap-south-1.amazonaws.com/${params.ZOMATO_ECR_REPO}:latest
+                """
+                }
+            }
+        }
+
+         stage("Cleanup Docker Images"){
+            steps{
+                sh """
+                docker rmi ${params.ZOMATO_ECR_REPO}:latest ${params.AWS_ACC_ID}.dkr.ecr.ap-south-1.amazonaws.com/${params.ZOMATO_ECR_REPO}:$BUILD_NUMBER 
+                docker rmi ${params.ZOMATO_ECR_REPO}:latest ${params.AWS_ACC_ID}.dkr.ecr.ap-south-1.amazonaws.com/${params.ZOMATO_ECR_REPO}:latest
+                docker images
+                """
+            }
+        }
+
+    }
+
+    post {
+
+    success {
+        script {
+
+            def body = """
+            <html>
+            <body>
+
+            <div style="border: 4px solid green; padding: 15px; border-radius: 10px;">
+
+            <h2>CI Pipeline Success - Build #${BUILD_NUMBER}</h2>
+
+            <div style="background-color: green; padding: 10px; border-radius: 5px;">
+                <h3 style="color: white;">
+                    Build Status: SUCCESS
+                </h3>
+            </div>
+
+            <br>
+
+            <table border="1" cellpadding="8" cellspacing="0" width="100%">
+
+                <tr>
+                    <th align="left">Pipeline Name</th>
+                    <td>${JOB_NAME}</td>
+                </tr>
+
+                <tr>
+                    <th align="left">Build Number</th>
+                    <td>${BUILD_NUMBER}</td>
+                </tr>
+
+                <tr>
+                    <th align="left">Docker Repository</th>
+                    <td>${params.ZOMATO_ECR_REPO}</td>
+                </tr>
+
+                <tr>
+                    <th align="left">Build URL</th>
+                    <td>
+                        <a href="${env.BUILD_URL}">
+                            Open Jenkins Build
+                        </a>
+                    </td>
+                </tr>
+
+            </table>
+
+            <br>
+
+            <h3>CI Pipeline Summary</h3>
+
+            <ul>
+                <li>Git checkout completed</li>
+                <li>NPM install completed</li>
+                <li>Trivy filesystem scan completed</li>
+                <li>SonarQube analysis passed</li>
+                <li>Docker image built successfully</li>
+                <li>Docker image pushed to AWS ECR</li>
+            </ul>
+
+            </div>
+
+            </body>
+            </html>
+            """
+
+            emailext(
+                subject: "SUCCESS: CI Pipeline - Build #${BUILD_NUMBER}",
+                body: body,
+                to: 'waktepranav00@gmail.com',
+                from: 'jenkins@example.com',
+                replyTo: 'jenkins@example.com',
+                mimeType: 'text/html',
+                attachmentsPattern: 'trivy-fs-report.html'
+            )
+        }
+    }
+
+    failure {
+        script {
+
+            def body = """
+            <html>
+            <body>
+
+            <div style="border: 4px solid red; padding: 15px; border-radius: 10px;">
+
+            <h2>CI Pipeline Failed - Build #${BUILD_NUMBER}</h2>
+
+            <div style="background-color: red; padding: 10px; border-radius: 5px;">
+                <h3 style="color: white;">
+                    Build Status: FAILED
+                </h3>
+            </div>
+
+            <br>
+
+            <table border="1" cellpadding="8" cellspacing="0" width="100%">
+
+                <tr>
+                    <th align="left">Pipeline Name</th>
+                    <td>${JOB_NAME}</td>
+                </tr>
+
+                <tr>
+                    <th align="left">Build Number</th>
+                    <td>${BUILD_NUMBER}</td>
+                </tr>
+
+                <tr>
+                    <th align="left">Docker Repository</th>
+                    <td>${params.ZOMATO_ECR_REPO}</td>
+                </tr>
+
+                <tr>
+                    <th align="left">Build URL</th>
+                    <td>
+                        <a href="${env.BUILD_URL}">
+                            Open Jenkins Console Logs
+                        </a>
+                    </td>
+                </tr>
+
+            </table>
+
+            <br>
+
+           <tr>
+                <th align="left" valign="top" style="padding: 8px; white-space: nowrap;">Failed Stage:</th>
+                <td align="left" valign="top" style="padding: 8px; font-weight: bold; color: #d9534f;">${env.FAILED_STAGE}</td>
+            </tr>
+
+
+            <br>
+
+            <p>
+                Please review Jenkins console logs for detailed troubleshooting.
+            </p>
+
+            </div>
+
+            </body>
+            </html>
+            """
+
+            emailext(
+                subject: "FAILED: CI Pipeline - Build #${BUILD_NUMBER}",
+                body: body,
+                to: 'waktepranav00@gmail.com',
+                mimeType: 'text/html',
+                attachmentsPattern: env.FAILED_STAGE == 'Trivy Scanning' ? 'trivy-fs-report.html' : ''
+            )
+        }
+    }
+}
+
+}
