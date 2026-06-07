@@ -7,7 +7,7 @@ pipeline{
     }
     
     environment{
-        SCANNER_HOME = tool 'sonar-scanner'
+        SONAR_HOME = tool 'sonar-scanner'
     }
 
     parameters{
@@ -63,9 +63,9 @@ pipeline{
                 }
                 withSonarQubeEnv('sonar-server') {
                     sh """
-                        $SCANNER_HOME/bin/sonar-scanner \ 
+                        $SONAR_HOME/bin/sonar-scanner \ 
                         -Dsonar.projectName=zomato-app \
-                        -Dsonar.projectKey=zomato-app
+                        -Dsonar.projectKey=zomato-app 
                     """
                 }
             }
