@@ -52,7 +52,7 @@ pipeline{
                 script{
                     env.FAILED_STAGE = "Trivy File Scan"
                 }
-                sh "trivy fs --format table -o trivy-fs-report.html"
+                sh "trivy fs --format table -o trivy-fs-report.html ."
             }
         }
 
