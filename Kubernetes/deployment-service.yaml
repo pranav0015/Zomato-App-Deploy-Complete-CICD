@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name:  zomato-app-container
-        image:  zomato-ecr-image:12
+        image:  752948842505.dkr.ecr.ap-south-1.amazonaws.com/zomato-ecr-image:latest
         imagePullPolicy: Always
         ports:
         - containerPort:  80
