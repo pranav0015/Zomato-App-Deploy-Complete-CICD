@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name:  zomato-app-container
-        image:  zomato-ecr-image:latest
+        image:  zomato-ecr-image:10
         imagePullPolicy: Always
         ports:
         - containerPort:  80
