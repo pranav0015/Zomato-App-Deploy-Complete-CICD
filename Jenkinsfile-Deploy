@@ -22,7 +22,7 @@ pipeline{
 
                  cat "./Kubernetes/deployment-service.yaml"
 
-                 git add "./kubernetes/deployment-service.yaml" 
+                 git add "./Kubernetes/deployment-service.yaml" 
 
                  git commit -m "Updated the image tag with the latest ${params.Image_Tag}" || echo "nothing to commit"
                  
