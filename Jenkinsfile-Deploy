@@ -18,9 +18,9 @@ pipeline{
                 sh """
                  # replace the docker image tag with the latest build number and updated the deployment file
 
-                 sed -i "s|zomato-ecr-image:.*|zomato-ecr-image:${params.Image_Tag}|g" "./kubernetes/deployment-service.yaml"
+                 sed -i "s|zomato-ecr-image:.*|zomato-ecr-image:${params.Image_Tag}|g" "./Kubernetes/deployment-service.yaml"
 
-                 cat "./kubernetes/deployment-service.yaml"
+                 cat "./Kubernetes/deployment-service.yaml"
 
                  git add "./kubernetes/deployment-service.yaml" 
 
