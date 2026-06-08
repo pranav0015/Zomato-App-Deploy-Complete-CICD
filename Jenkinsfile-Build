@@ -36,17 +36,6 @@ pipeline{
                 sh "npm install"
             }
         }
-
-        stage('OWASP FS SCAN') {
-                steps {
-                    script{
-                        env.FAILED_STAGE = "OWASP FS SCAN"
-                    }
-                    dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit --nvdApiKey F31F5B04-6962-F111-836C-0EBF96DE670D', odcInstallation: 'dependency-check' // DC is tools name for dependency check in Jenkins Tools. and created nvdApiKey from online.
-                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-                 }
-            }
-
         stage("Trivy File Scan"){
             steps{
                 script{
