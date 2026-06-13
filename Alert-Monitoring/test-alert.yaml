@@ -2,18 +2,18 @@ apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 
 metadata:
-  name: test-alert2
-  namespace: monitoring
+  name: test-alert
+  namespace: prometheus
 
   labels:
     release: stable
 
 spec:
   groups:
-  - name: test-alert-group-2
+  - name: test-alert
 
     rules:
-    - alert: TestAlert2
+    - alert: TestAlert
 
       expr: vector(1)
 
@@ -23,6 +23,6 @@ spec:
         severity: warning
 
       annotations:
-        summary: Test Alert2
+        summary: Test Alert
 
         description: Testing Alertmanager Integration

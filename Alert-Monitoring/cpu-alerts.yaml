@@ -2,7 +2,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
   name: cpu-alert
-  namespace: monitoring
+  namespace: prometheus
   labels:
     release: stable # from  stable-kube-prometheus-sta-prometheus "ruleNamespaceSelector" field
     app.kubernetes.io/instance: monitoring-infrastructure # from argocd yaml
