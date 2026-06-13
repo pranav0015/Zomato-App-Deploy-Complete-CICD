@@ -4,7 +4,7 @@ metadata:
   name: cpu-alert
   namespace: monitoring
   labels:
-    release: stable # from  prometheus stable-kube-prometheus-sta-prometheus 
+    release: stable # from  stable-kube-prometheus-sta-prometheus "ruleNamespaceSelector" field
     app.kubernetes.io/instance: monitoring-infrastructure # from argocd yaml
 spec:
   groups:
