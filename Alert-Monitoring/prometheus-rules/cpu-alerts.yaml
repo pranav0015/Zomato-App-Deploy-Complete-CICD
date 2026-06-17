@@ -24,7 +24,7 @@ spec:
 
       for: 2m
       labels:
-        severity: Critical
+        severity: critical
       annotations:
         summary: High CPU Usage
         description: CPU utilization exceeds 80%
