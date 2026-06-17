@@ -16,11 +16,11 @@ spec:
 
       helm:
         valueFiles:
-          - $values/Monitoring-Stack/values.yaml
+          - $values/Alert-Monitoring/monitoring-stack/values.yaml
 
     - repoURL: https://github.com/pranav0015/Zomato-App-Deploy-Complete-CICD.git
       targetRevision: HEAD
-      ref: values
+      ref: values #this value.yaml file will be provided to HELM valueFiles as an input
 
   destination:
     server: https://kubernetes.default.svc
