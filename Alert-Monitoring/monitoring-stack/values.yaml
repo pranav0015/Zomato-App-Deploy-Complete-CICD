@@ -3,6 +3,9 @@ alertmanager:
     secrets:
       - slack-webhook
 
+  service:
+    type: LoadBalancer
+
   config:
     global:
       resolve_timeout: 5m
@@ -13,12 +16,10 @@ alertmanager:
 
     receivers:
       - name: slack-notifications
-
         slack_configs:
           - channel: "#all-zomato-monitoring"
             send_resolved: true
             title: "{{ .CommonLabels.alertname }}"
-
             text: |
               Alert: {{ .CommonLabels.alertname }}
 
@@ -29,3 +30,7 @@ alertmanager:
 
               Instance:
               {{ .CommonLabels.instance }}
+
+prometheus:
+  service:
+    type: LoadBalancer
