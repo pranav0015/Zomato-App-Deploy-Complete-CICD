@@ -17,3 +17,15 @@ alertmanager:
         slack_configs:
           - channel: "#all-zomato-monitoring"
             send_resolved: true
+            title: "{{ .CommonLabels.alertname }}"
+
+            text: |
+              Alert: {{ .CommonLabels.alertname }}
+
+              Severity: {{ .CommonLabels.severity }}
+
+              Description:
+              {{ .CommonAnnotations.description }}
+
+              Instance:
+              {{ .CommonLabels.instance }}
