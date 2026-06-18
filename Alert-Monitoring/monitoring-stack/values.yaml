@@ -48,3 +48,7 @@ alertmanager:
 prometheus:
   service:
     type: LoadBalancer
+
+grafana:
+  service:
+    type: LoadBalancer
