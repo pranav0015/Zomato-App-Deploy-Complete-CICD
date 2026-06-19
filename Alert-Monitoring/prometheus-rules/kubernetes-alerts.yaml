@@ -1,7 +1,7 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: pod-restart-alert
+  name: pod-monitoring-alert
   namespace: prometheus
   labels:
     release: monitoring-stack # from  stable-kube-prometheus-sta-prometheus "ruleNamespaceSelector" field
