@@ -1,0 +1,71 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: pod-restart-alert
+  namespace: prometheus
+  labels:
+    release: monitoring-stack # from  stable-kube-prometheus-sta-prometheus "ruleNamespaceSelector" field
+    app.kubernetes.io/instance: monitoring-infrastructure # from argocd yaml
+spec:
+  groups:
+  - name: kubernetes-alerts
+    rules:
+    - alert: PodRestartingFrequently
+      expr: increase(kube_pod_container_status_restarts_total{namespace="default"}[5m])>0 # this alert is set for only application pod which are in default namespace
+
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Pod Restarting Frequently
+        description: |
+          Pod {{ $labels.namespace }}/{{ $labels.pod }}
+          restarted more than 3 times in the last 5 minutes.
+
+
+    - alert: PodHighMemoryUsage
+      expr: |
+          (
+            container_memory_working_set_bytes{
+              namespace="default",
+              container!="",
+              container!="POD"
+            }
+            /
+            container_spec_memory_limit_bytes{
+              namespace="default",
+              container!="",
+              container!="POD"
+            }
+          ) * 100 > 80
+
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: High Memory Usage in Application Pod
+        description: |
+          Pod {{ $labels.pod }} is using more than 80% of its memory limit.
+
+
+    - alert: ApplicationPodCrashLoopBackOff
+      expr: |
+        kube_pod_container_status_waiting_reason{
+          namespace="default",
+          reason="CrashLoopBackOff",
+          pod=~"zomato-app-crash-test.*"
+        } == 1
+
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Application Pod in CrashLoopBackOff
+        description: |
+          Pod {{ $labels.pod }} in namespace {{ $labels.namespace }}
+          is in CrashLoopBackOff state.
+
+
+
+
+    

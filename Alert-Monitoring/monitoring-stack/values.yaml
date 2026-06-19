@@ -14,7 +14,7 @@ alertmanager:
     route:
       receiver: slack-notifications
 
-      group_by: ['...'] # means dont group alert by namespace sent it seperately
+      group_by: ['...'] # means don't the group alert by namespace, send it seperately to slack channel
 
       group_wait: 30s
       group_interval: 5m
