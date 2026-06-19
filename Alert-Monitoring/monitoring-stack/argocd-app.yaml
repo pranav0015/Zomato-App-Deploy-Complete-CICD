@@ -29,5 +29,5 @@ spec:
 
   syncPolicy:
     automated:
-      prune: true
+      prune: true # means, if changes available in git, not matched to the cluster changes, but still argocd will not delete that particular changes from the cluster. Ideally it should delete because GIT and cluster state is not matching.
       selfHeal: true

@@ -25,8 +25,8 @@ pipeline {
                 script {
                     // Step 1: Delete services and deployments
                     sh 'kubectl delete svc kubernetes || true'
-                    sh 'kubectl delete deploy disney-hotstar-deploy || true'
-                    sh 'kubectl delete svc disney-hotstar-svc || true'
+                    sh 'kubectl delete deploy zomato-app-deploy || true'
+                    sh 'kubectl delete svc zomato-app-svc || true'
 
                     // Step 2: Delete ArgoCD installation and namespace
                     sh 'kubectl delete -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.11.3/manifests/install.yaml || true'
