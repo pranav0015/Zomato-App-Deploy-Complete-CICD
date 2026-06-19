@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zomato-app-crash-test
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zomato-app-crash-test
+  template:
+    metadata:
+      labels:
+        app: zomato-app-crash-test
+    spec:
+      containers:
+      - name: crash-container
+        image: busybox
+        command:
+          - sh
+          - -c
+          - exit 1
